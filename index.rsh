@@ -1,7 +1,7 @@
 /**
  * Gambling DApp
  * 
- * Return a varying wager amounts specific to each users bet
+ * Return varying wager amounts specific to each users bet
  * 
  * covers:
  * network tokens
@@ -31,27 +31,26 @@
    commit();
    A.interact.ready(getContract());
    A.publish();
-   // it works!
    const pMap = new Map(UInt);
-   const [count] = parallelReduce([0])
+   const [count, done] = parallelReduce([0, false])
     // the balance needs to be related to the map sum!
      .invariant(balance() == pMap.sum(), "balance accurate")
      .invariant(pMap.size() == count, "count accurate")
-     .while(count < 4)
+     .while(count < 4 || !done)
      .api_(B.startGame, (bet) => {
         check(isNone(pMap[this]), "sorry, you already registered");
         return[bet, (ret) => {
           pMap[this] = bet;
           ret(true);
-          return [count + 1];
+          return [count + 1, false];
         }];
      })
      .api_(B.getCard, () => {
-      check(isNone(pMap[this]), 'sorry, you are not in the list');
+      check(isSome(pMap[this]), 'sorry, you are not in the list');
       return [ (ret) => {
         // do something
         ret(null);
-        return[count];
+        return[count, true];
       }];
      })
      .api_(B.refund, () => {
@@ -61,7 +60,7 @@
           ret(bet);
           transfer(bet).to(this);
           delete pMap[this]
-          return[count - 1];
+          return[count - 1, false];
         }];
      });
      // taking this out throws balance zero at application exit errors
