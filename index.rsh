@@ -7,8 +7,6 @@
  * network tokens
  * more advanced invariants
  * 
- * Errors:
- * There is an ongoing loop somwhere
  */
  'reach 0.1';
 
