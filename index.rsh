@@ -12,30 +12,31 @@
 
  export const main = Reach.App(() => {
    const A = Participant('Admin', {
-     cost: UInt,
+     amount: UInt,
      ready: Fun([Contract], Null),
    });
    const B = API('Buyer', {
-     startGame: Fun([UInt], Bool),
+     placeBet: Fun([UInt], Bool),
      refund: Fun([], UInt),
-     getCard: Fun([], Null),
+     hiLo: Fun([], Null),
    });
    init();
  
    A.only(() => {
-     const amount = declassify(interact.cost);
+     const amount = declassify(interact.amount);
+     assume(amount == 100, "wrong amount paid in");
    });
    A.publish(amount);
    commit();
    A.interact.ready(getContract());
-   A.publish();
+   A.pay(amount);
    const pMap = new Map(UInt);
    const [count, done] = parallelReduce([0, false])
     // the balance needs to be related to the map sum!
-     .invariant(balance() == pMap.sum(), "balance accurate")
+     .invariant(balance() == (pMap.sum() + amount), "balance accurate")
      .invariant(pMap.size() == count, "count accurate")
      .while(count < 4 || !done)
-     .api_(B.startGame, (bet) => {
+     .api_(B.placeBet, (bet) => {
         check(isNone(pMap[this]), "sorry, you already registered");
         return[bet, (ret) => {
           pMap[this] = bet;
@@ -43,7 +44,7 @@
           return [count + 1, false];
         }];
      })
-     .api_(B.getCard, () => {
+     .api_(B.hiLo, () => {
       check(isSome(pMap[this]), 'sorry, you are not in the list');
       return [ (ret) => {
         // do something
